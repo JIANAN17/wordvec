@@ -7,7 +7,9 @@ import warnings
 
 import numpy as np
 
-from multiprocessing import Pool, Value, Array
+from multiprocessing import Pool, Value, Array, Lock
+
+lock = Lock()
 
 class VocabItem:
     def __init__(self, word):
@@ -215,7 +217,6 @@ def train_process(pid):
     end = vocab.bytes if pid == num_processes - 1 else vocab.bytes / num_processes * (pid + 1)
     fi.seek(start)
     print 'Worker %d beginning training at %d, ending at %d' % (pid, start, end)
-
     alpha = starting_alpha
 
     word_count = 0
@@ -234,12 +235,13 @@ def train_process(pid):
 
         for sent_pos, token in enumerate(sent):
             if word_count % 10000 == 0:
-                global_word_count.value += (word_count - last_word_count)
-                last_word_count = word_count
+                with lock:
+                    global_word_count.value += (word_count - last_word_count)
+                    last_word_count = word_count
 
-                # Recalculate alpha
-                alpha = starting_alpha * (1 - float(global_word_count.value) / vocab.word_count)
-                if alpha < starting_alpha * 0.0001: alpha = starting_alpha * 0.0001
+                    # Recalculate alpha
+                    alpha = starting_alpha * (1 - float(global_word_count.value) / vocab.word_count)
+                    if alpha < starting_alpha * 0.0001: alpha = starting_alpha * 0.0001
 
                 # Print progress info
                 sys.stdout.write("\rAlpha: %f Progress: %d of %d (%.2f%%)" %
@@ -303,7 +305,8 @@ def train_process(pid):
 
 
     # Print progress info
-    global_word_count.value += (word_count - last_word_count)
+    with lock:
+        global_word_count.value += (word_count - last_word_count)
     sys.stdout.write("\rAlpha: %f Progress: %d of %d (%.2f%%)" %
                      (alpha, global_word_count.value, vocab.word_count,
                       float(global_word_count.value)/vocab.word_count * 100))
@@ -346,11 +349,11 @@ def __init_process(*args):
 def train(fi, fo, cbow, neg, dim, alpha, win, min_count, num_processes, binary):
     # Read train file to init vocab
     vocab = Vocab(fi, min_count)
-
     # Init net
     syn0, syn1 = init_net(dim, len(vocab))
 
     global_word_count = Value('i', 0)
+    
     table = None
     if neg > 0:
         print 'Initializing unigram table'
