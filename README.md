@@ -1,0 +1,3 @@
+```
+python refine.py > mytext
+```
