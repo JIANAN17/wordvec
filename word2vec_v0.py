@@ -242,12 +242,12 @@ def train_process(pid):
                     # Recalculate alpha
                     alpha = starting_alpha * (1 - float(global_word_count.value) / vocab.word_count)
                     if alpha < starting_alpha * 0.0001: alpha = starting_alpha * 0.0001
-
-                # Print progress info
-                sys.stdout.write("\rAlpha: %f Progress: %d of %d (%.2f%%)" %
-                                 (alpha, global_word_count.value, vocab.word_count,
-                                  float(global_word_count.value) / vocab.word_count * 100))
-                sys.stdout.flush()
+                    
+                    # Print progress info
+                    sys.stdout.write("\rAlpha: %f Progress: %d of %d (%.2f%%)" %
+                                     (alpha, global_word_count.value, vocab.word_count,
+                                      float(global_word_count.value) / vocab.word_count * 100))
+                    sys.stdout.flush()
 
             # Randomize window size, where win is the max window size
             current_win = np.random.randint(low=1, high=win+1)
@@ -307,10 +307,10 @@ def train_process(pid):
     # Print progress info
     with lock:
         global_word_count.value += (word_count - last_word_count)
-    sys.stdout.write("\rAlpha: %f Progress: %d of %d (%.2f%%)" %
-                     (alpha, global_word_count.value, vocab.word_count,
-                      float(global_word_count.value)/vocab.word_count * 100))
-    sys.stdout.flush()
+        sys.stdout.write("\rAlpha: %f Progress: %d of %d (%.2f%%)" %
+                         (alpha, global_word_count.value, vocab.word_count,
+                          float(global_word_count.value)/vocab.word_count * 100))
+        sys.stdout.flush()
     fi.close()
 
 def save(vocab, syn0, fo, binary):
